@@ -21,3 +21,7 @@
 
 # vercel
 .vercel
+
+# Next build output
+.next/
+out/
