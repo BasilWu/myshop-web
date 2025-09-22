@@ -1,7 +1,9 @@
 {
-  "/page": "app/page.js",
-  "/products/page": "app/products/page.js",
-  "/community/page": "app/community/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/cart/page": "app/cart/page.js",
-  "/products/[id]/page": "app/products/[id]/page.js"
+  "/page": "app/page.js",
+  "/products/[id]/page": "app/products/[id]/page.js",
+  "/community/page": "app/community/page.js",
+  "/products/page": "app/products/page.js"
 }
