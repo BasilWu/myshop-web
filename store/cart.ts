@@ -1,25 +1,36 @@
-import { create } from "zustand";
+import { create } from 'zustand';
 
-type Item = { id: string; name: string; price: number; qty: number };
-type State = {
-  items: Item[];
-  add: (it: Item) => void;
+export type CartItem = {
+  id: string;
+  name: string;
+  price: number;
+  qty: number;
+};
+
+type CartState = {
+  items: CartItem[];
+  add: (item: CartItem) => void;
   remove: (id: string) => void;
   clear: () => void;
   total: () => number;
 };
 
-export const useCart = create<State>((set, get) => ({
+export const useCart = create<CartState>((set, get) => ({
   items: [],
-  add: (it) =>
-    set((s) => {
-      const ex = s.items.find((x) => x.id === it.id);
-      if (ex) {
-        return { items: s.items.map((x) => (x.id === it.id ? { ...x, qty: x.qty + it.qty } : x)) };
-      }
-      return { items: [...s.items, it] };
-    }),
-  remove: (id) => set((s) => ({ items: s.items.filter((x) => x.id !== id) })),
+  add: (item) => {
+    const items = get().items;
+    const existing = items.find((i) => i.id === item.id);
+    if (existing) {
+      set({
+        items: items.map((i) =>
+          i.id === item.id ? { ...i, qty: i.qty + item.qty } : i,
+        ),
+      });
+    } else {
+      set({ items: [...items, item] });
+    }
+  },
+  remove: (id) => set({ items: get().items.filter((i) => i.id !== id) }),
   clear: () => set({ items: [] }),
-  total: () => get().items.reduce((sum, x) => sum + x.price * x.qty, 0),
+  total: () => get().items.reduce((sum, i) => sum + i.price * i.qty, 0),
 }));
