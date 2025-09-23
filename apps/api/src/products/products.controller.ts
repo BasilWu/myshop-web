@@ -1,17 +1,17 @@
-import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { ProductsService } from './products.service';
 
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly svc: ProductsService) {}
+  constructor(private readonly productsService: ProductsService) {}
 
   @Get()
-  findAll() { return this.svc.findAll(); }
+  findAll() {
+    return this.productsService.findAll();
+  }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    const p = this.svc.findOne(id);
-    if (!p) throw new NotFoundException('Product not found');
-    return p;
+    return this.productsService.findOne(id);
   }
 }

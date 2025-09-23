@@ -1,16 +1,48 @@
-node_modules
-.next
-dist
-out
+# === Node.js ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# === Build / Output ===
+dist/
+.next/
+out/
+coverage/
+build/
+
+# === Env / Secrets ===
 .env
-*.env
-apps/*/.env
-apps/*/.env.local
-*.log
+.env.*        # 例如 .env.local, .env.development
+!.env.example # 保留範例檔案
+
+# === OS / Editor ===
 .DS_Store
-next-env.d.ts
-apps/web/next-env.d.tsnext-env.d.ts
-apps/web/next-env.d.ts
-.env.local
-apps/*/.env.local
-apps/*/.env
+Thumbs.db
+*.swp
+*.swo
+*.swn
+*.swm
+
+# === Logs ===
+*.log
+logs/
+*.pid
+*.seed
+*.pid.lock
+
+# === TypeScript ===
+*.tsbuildinfo
+
+# === IDE ===
+.vscode/
+.idea/
+*.iml
+
+# === Misc ===
+.next-env.d.ts
+.eslintcache
+# husky 自動產生的 internal scripts
+.husky/_    

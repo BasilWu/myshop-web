@@ -1,9 +1,11 @@
 'use client';
-import { useCart } from '@/store/cart';
+import { useCartStore } from '@/store/cart';
 import Link from 'next/link';
 
 export default function CartPage() {
-  const { items, total, remove, clear } = useCart();
+  const { items, remove, clear } = useCartStore();
+  // Calculate total price
+  const total = () => items.reduce((sum, i) => sum + i.price * i.qty, 0);
 
   return (
     <main className="p-6 space-y-4">

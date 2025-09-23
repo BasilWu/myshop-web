@@ -1,28 +1,37 @@
-import AddToCart from './AddToCart';
+import { api } from '@/lib/api';
+import type { Product } from '@/types/product';
+import AddToCartInline from '../AddToCartInline';
+import Image from 'next/image';
 
-const API = process.env.NEXT_PUBLIC_API_BASE_URL as string;
-
-type Product = { id: string; name: string; price: number };
-
-interface Props {
+export default async function ProductDetailPage(props: {
   params: Promise<{ id: string }>;
-}
+}) {
+  // ✅ 這裡 await params
+  const { id } = await props.params;
 
-export default async function ProductDetailPage({ params }: Props) {
-  const { id } = await params; // ✅ 必須 await
-
-  const res = await fetch(`${API}/products/${id}`, { cache: 'no-store' });
-  if (!res.ok) {
-    return <p className="p-6 text-red-500">Failed to load product.</p>;
-  }
-
-  const p = (await res.json()) as Product;
+  const product = await api<Product>(`/products/${id}`);
 
   return (
-    <main className="p-6">
-      <h1 className="text-2xl font-bold mb-2">{p.name}</h1>
-      <p className="text-lg">NT$ {p.price}</p>
-      <AddToCart id={p.id} name={p.name} price={p.price} />
+    <main className="p-6 max-w-3xl mx-auto">
+      <Image
+        src={product.images?.[0] ?? '/placeholder.png'}
+        alt={product.name}
+        width={1200}
+        height={400}
+        className="w-full h-96 object-cover rounded mb-4 bg-gray-100"
+        priority
+      />
+
+      <div className="mb-4 text-gray-600">{product.description}</div>
+      <div className="mb-2">價格：${product.price}</div>
+      <div className="mb-6">庫存：{product.stock}</div>
+
+      <AddToCartInline
+        id={product.id}
+        name={product.name}
+        price={product.price}
+        image={product.images?.[0] ?? null}
+      />
     </main>
   );
 }

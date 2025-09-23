@@ -1,9 +1,9 @@
 'use client';
 import Link from 'next/link';
-import { useCart } from '@/store/cart';
+import { useCartStore } from '@/store/cart';
 
 export default function Nav() {
-  const items = useCart((s) => s.items);
+  const items = useCartStore((s) => s.items);
   const count = items.reduce((n, i) => n + i.qty, 0);
 
   return (

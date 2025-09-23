@@ -1,33 +1,43 @@
 import Link from 'next/link';
-import AddToCartInline from './AddToCartInline';
+import { api } from '@/lib/api';
+import type { Product } from '@/types/product';
 
-const API = process.env.NEXT_PUBLIC_API_BASE_URL as string;
-
-type Product = { id: string; name: string; price: number };
+export const revalidate = 0;
 
 export default async function ProductsPage() {
-  const res = await fetch(`${API}/products`, { cache: 'no-store' });
-  if (!res.ok) {
-    throw new Error('Failed to fetch products');
-  }
-  const items = (await res.json()) as Product[];
+  const products = await api<Product[]>('/products');
 
   return (
-    <main className="p-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-      {items.map((p) => (
-        <div key={p.id}>
-          <Link
-            href={`/products/${p.id}`}
-            className="rounded-xl border p-4 shadow hover:bg-gray-50 transition block"
-          >
-            <h2 className="font-semibold">{p.name}</h2>
-            <p className="text-sm opacity-70">NT$ {p.price}</p>
+    <main className="p-6 max-w-5xl mx-auto">
+      <h1 className="text-2xl font-semibold mb-6">商品</h1>
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {products.map((p) => (
+          <Link key={p.id} href={`/products/${p.id}`}>
+            <div className="border rounded-lg p-4 hover:shadow cursor-pointer">
+              <div className="w-full aspect-square bg-gray-100 rounded mb-3 overflow-hidden">
+                {p.images?.[0] ? (
+                  <img
+                    src={p.images[0]}
+                    alt={p.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full grid place-items-center text-gray-400 text-sm">
+                    No Image
+                  </div>
+                )}
+              </div>
+              <div className="font-medium">{p.name}</div>
+              <div className="text-sm text-gray-500 line-clamp-2">
+                {p.description}
+              </div>
+              <div className="mt-1">
+                價格：${p.price}　庫存：{p.stock}
+              </div>
+            </div>
           </Link>
-          <div className="pt-2">
-            <AddToCartInline id={p.id} name={p.name} price={p.price} />
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </main>
   );
 }
