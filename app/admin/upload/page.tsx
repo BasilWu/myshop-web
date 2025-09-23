@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 
 export default function UploadPage() {
@@ -30,17 +31,18 @@ export default function UploadPage() {
             body: form,
           },
         );
+        if (!res.ok)
+          throw new Error(`Upload failed: ${res.status} ${res.statusText}`);
 
-        if (!res.ok) {
-          throw new Error(`Upload failed: ${res.statusText}`);
-        }
-
-        const data = await res.json();
+        const data: { url: string } = await res.json();
         newMessages.push(`✅ ${file.name} 上傳成功`);
         newUrls.push(data.url);
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        newMessages.push(`❌ ${file.name} 失敗: ${msg}`);
+        // 同步也在 console 幫你看
+        // eslint-disable-next-line no-console
         console.error('Upload failed:', err);
-        newMessages.push(`❌ ${file.name} 失敗: ${err.message}`);
       }
     }
 
@@ -50,36 +52,35 @@ export default function UploadPage() {
   };
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>多檔案上傳</h1>
-
+    <main className="p-6 space-y-4">
+      <h1 className="text-2xl font-semibold">多檔案上傳</h1>
       <input type="file" multiple onChange={handleChange} disabled={loading} />
-
       {loading && <p>⏳ 上傳中...</p>}
 
       {messages.length > 0 && (
-        <ul>
-          {messages.map((msg, i) => (
-            <li key={i}>{msg}</li>
+        <ul className="list-disc pl-5">
+          {messages.map((m, i) => (
+            <li key={i}>{m}</li>
           ))}
         </ul>
       )}
 
       {imageUrls.length > 0 && (
-        <div style={{ marginTop: '1rem' }}>
-          <h3>預覽：</h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
-            {imageUrls.map((url, i) => (
-              <img
-                key={i}
+        <section className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {imageUrls.map((url, i) => (
+            <div key={i} className="relative w-64 h-40">
+              <Image
                 src={url}
-                alt={`Uploaded ${i}`}
-                style={{ maxWidth: '200px' }}
+                alt={`uploaded-${i}`}
+                fill
+                sizes="256px"
+                className="object-contain rounded border"
+                unoptimized
               />
-            ))}
-          </div>
-        </div>
+            </div>
+          ))}
+        </section>
       )}
-    </div>
+    </main>
   );
 }
