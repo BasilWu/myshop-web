@@ -1,1 +1,5 @@
-pnpm lint-staged
+. "$(dirname -- "$0")/_/husky.sh"
+
+if [ -f apps/web/package.json ]; then
+  pnpm -C apps/web lint-staged
+fi

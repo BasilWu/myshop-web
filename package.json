@@ -1,5 +1,5 @@
 {
-  "name": "@myshop/web",
+  "name": "myshop",
   "private": true,
   "packageManager": "pnpm@10.16.1",
   "scripts": {
