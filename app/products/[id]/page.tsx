@@ -22,7 +22,6 @@ export default async function ProductDetailPage({ params }: Props) {
     <main className="p-6">
       <h1 className="text-2xl font-bold mb-2">{p.name}</h1>
       <p className="text-lg">NT$ {p.price}</p>
-      <p className="mt-4 text-sm text-gray-500">商品 ID: {p.id}</p>
       <AddToCart id={p.id} name={p.name} price={p.price} />
     </main>
   );
