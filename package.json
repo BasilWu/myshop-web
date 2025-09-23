@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "concurrently -k -n WEB,API -c cyan,magenta \"pnpm --filter @myshop/web dev\" \"pnpm --filter @myshop/api start:dev\"",
     "build": "pnpm -r build",
-    "lint": "pnpm -r lint",
+    "lint": "pnpm -C apps/web lint",
     "format": "pnpm -r format"
   },
   "devDependencies": {
