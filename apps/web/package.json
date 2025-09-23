@@ -2,13 +2,19 @@
   "name": "@myshop/web",
   "private": true,
   "packageManager": "pnpm@10.16.1",
-  "scripts": {
-    "dev": "concurrently -k -n WEB,API -c cyan,magenta \"pnpm --filter @myshop/web dev\" \"pnpm --filter @myshop/api start:dev\"",
-    "build": "pnpm -r build",
-    "lint": "pnpm -r lint",
-    "format": "pnpm -r format"
+    "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "start": "next start"
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx,css,md}": ["prettier --write"]
   },
   "devDependencies": {
-    "concurrently": "^9.0.1"
+    "concurrently": "^9.0.1",
+    "lint-staged": "^16.2.0",
+    "prettier": "^3.6.2"
   }
 }
