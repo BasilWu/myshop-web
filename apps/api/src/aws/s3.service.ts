@@ -47,8 +47,7 @@ export class S3Service {
           Bucket: this.bucket,
           Key: key,
           Body: file.buffer,
-          ContentType: file.mimetype,
-          ACL: 'public-read', // ✅ 確保上傳後可以直接公開存取
+          ContentType: file.mimetype
         }),
       );
 
