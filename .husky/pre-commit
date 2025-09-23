@@ -1,1 +1,10 @@
-pnpm lint-staged
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# 若有 apps/web，就進去跑 lint-staged
+if [ -d "apps/web" ] && [ -f "apps/web/package.json" ]; then
+  (cd apps/web && pnpm exec lint-staged) || exit 1
+fi
+
+# 如果未來 apps/api 也要 lint-staged，可以加：
+# (cd apps/api && pnpm exec lint-staged) || exit 1

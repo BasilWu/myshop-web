@@ -1,27 +1,16 @@
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
-
-# testing
-/coverage
-
-# production
-/build
-
-# misc
+node_modules
+.next
+dist
+out
+.env
+*.env
+apps/*/.env
+apps/*/.env.local
+*.log
 .DS_Store
-*.pem
-
-# local env files
+next-env.d.ts
+apps/web/next-env.d.tsnext-env.d.ts
+apps/web/next-env.d.ts
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# vercel
-.vercel
-
-# Next build output
-.next/
-out/
+apps/*/.env.local
+apps/*/.env
