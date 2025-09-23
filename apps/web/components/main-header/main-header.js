@@ -4,10 +4,10 @@ import Link from 'next/link';
 import NavLink from './nav-link';
 import MainHeaderBackground from './main-header-background';
 import classes from './main-header.module.css';
-import { useCart } from '@/store/cart'; // ← 引入 cart store
+import { useCartStore } from '@/store/cart';
 
 export default function MainHeader() {
-  const { items } = useCart();
+  const { items } = useCartStore();
   const totalQty = items.reduce((sum, i) => sum + i.qty, 0);
 
   return (
