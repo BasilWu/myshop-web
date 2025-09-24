@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { api } from '@/lib/api';
 import type { Product } from '@/types/product';
 
@@ -16,7 +17,7 @@ export default async function ProductsPage() {
             <div className="border rounded-lg p-4 hover:shadow cursor-pointer">
               <div className="w-full aspect-square bg-gray-100 rounded mb-3 overflow-hidden">
                 {p.images?.[0] ? (
-                  <img
+                  <Image
                     src={p.images[0]}
                     alt={p.name}
                     className="w-full h-full object-cover"
