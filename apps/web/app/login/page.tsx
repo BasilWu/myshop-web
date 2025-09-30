@@ -33,7 +33,7 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || 'Login failed');
       // 後端回傳 { token, user }
-      login({ user: data.user, token: data.token });
+      login(data.user, data.token);
       router.push('/');
     } catch (e: any) {
       setErr(e.message);
