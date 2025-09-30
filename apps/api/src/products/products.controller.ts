@@ -1,4 +1,3 @@
-// apps/api/src/products/products.controller.ts
 import { Body, Controller, Get, Param, Post, Patch, Delete, UseGuards } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -11,36 +10,26 @@ import { RolesGuard } from '../auth/roles.guard';
 export class ProductsController {
   constructor(private readonly products: ProductsService) {}
 
-  // 開放（或若你想：@UseGuards(JwtAuthGuard) 但不加 RolesGuard）
   @Get()
-  findAll() {
-    return this.products.findAll(); // 一定要回陣列 Product[]
-  }
+  findAll() { return this.products.findAll(); }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.products.findOne(id);
-  }
+  findOne(@Param('id') id: string) { return this.products.findOne(id); }
 
-  // 僅後台需要權限
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  create(@Body() dto: CreateProductDto) {
-    return this.products.create(dto);
-  }
+  create(@Body() dto: CreateProductDto) { return this.products.create(dto); }
 
-  @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch(':id')
   @Roles('admin')
   update(@Param('id') id: string, @Body() dto: UpdateProductDto) {
     return this.products.update(id, dto);
   }
 
-  @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Delete(':id')
   @Roles('admin')
-  remove(@Param('id') id: string) {
-    return this.products.remove(id);
-  }
+  remove(@Param('id') id: string) { return this.products.remove(id); }
 }
