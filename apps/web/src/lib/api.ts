@@ -1,33 +1,36 @@
-const API = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
+import { useAuthStore } from '@/store/auth';
 
-export async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), 8000); // 8s timeout
+const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
-  try {
-    const res = await fetch(`${API}${path}`, {
-      ...init,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(init?.headers || {}),
-      },
-      cache: 'no-store',
-      signal: controller.signal,
-    });
+export async function apiFetch<T = any>(
+  path: string,
+  init: RequestInit = {},
+): Promise<T> {
+  const token = useAuthStore.getState().token;
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`API ${res.status} ${res.statusText}: ${text}`);
-    }
-    return res.json() as Promise<T>;
-  } catch (err: any) {
-    // 這裡保留詳細錯誤，方便你看到是哪個 URL 連不上
-    console.error('[api] fetch failed:', {
-      url: `${API}${path}`,
-      message: err?.message,
-    });
-    throw err;
-  } finally {
-    clearTimeout(id);
+  const res = await fetch(`${BASE}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init.headers || {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: 'include',
+    cache: 'no-store',
+  });
+
+  // 2xx
+  if (res.ok) {
+    // 如果內容是空的（204），直接回傳 undefined as any
+    if (res.status === 204) return undefined as any;
+    return (await res.json()) as T;
   }
+
+  // 非 2xx
+  let errMsg = `${res.status} ${res.statusText}`;
+  try {
+    const j = await res.json();
+    errMsg = j?.message || errMsg;
+  } catch {}
+  throw new Error(errMsg);
 }
