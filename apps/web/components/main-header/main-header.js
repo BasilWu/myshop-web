@@ -6,18 +6,11 @@ import MainHeaderBackground from './main-header-background';
 import classes from './main-header.module.css';
 import { useCartStore } from '@/store/cart';
 import { useAuthStore } from '@/store/auth';
-import { useEffect } from 'react';
 
 export default function MainHeader() {
   const { items } = useCartStore();
+  const { user, logout } = useAuthStore();
   const totalQty = items.reduce((sum, i) => sum + i.qty, 0);
-
-  const { user, restore, logout } = useAuthStore();
-
-  // 第一次掛載時從 localStorage 還原登入狀態
-  useEffect(() => {
-    restore();
-  }, [restore]);
 
   return (
     <>
@@ -34,39 +27,30 @@ export default function MainHeader() {
             <li>
               <NavLink href="/community">Shopping Community</NavLink>
             </li>
-
-            {/* admin 才顯示後台 */}
-            {user?.role === 'admin' && (
-              <li>
-                <NavLink href="/admin/products">後台</NavLink>
-              </li>
-            )}
-
             <li>
               <NavLink href="/cart">
                 🛒 Cart {totalQty > 0 && `(${totalQty})`}
               </NavLink>
             </li>
 
-            {/* 右側帳號區 */}
-            {!user ? (
+            {!user && (
+              <li>
+                <NavLink href="/login">登入</NavLink>
+              </li>
+            )}
+
+            {user && (
               <>
-                <li>
-                  <NavLink href="/login">登入</NavLink>
-                </li>
-                <li>{/* <NavLink href="/register">註冊</NavLink> */}</li>
-              </>
-            ) : (
-              <>
-                <li className="text-sm opacity-80 px-2">
-                  Hi, {user.name} ({user.role})
+                {user.role === 'admin' && (
+                  <li>
+                    <NavLink href="/admin/products">後台</NavLink>
+                  </li>
+                )}
+                <li className="text-sm opacity-80">
+                  {user.name || user.email}
                 </li>
                 <li>
-                  {/* 簡單的登出按鈕 */}
-                  <button
-                    onClick={logout}
-                    className="px-3 py-1 rounded border hover:bg-gray-50"
-                  >
+                  <button onClick={logout} className="underline">
                     登出
                   </button>
                 </li>

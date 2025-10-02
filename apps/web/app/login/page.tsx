@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth';
 
@@ -9,15 +9,21 @@ const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, user } = useAuthStore();
-  const [email, setEmail] = useState('user3@test.com');
-  const [password, setPassword] = useState('123456');
+  const search = useSearchParams();
+  const next = search.get('next') || '';
+  const { login, user, hasHydrated } = useAuthStore();
+
+  const [email, setEmail] = useState('admin@basil.com');
+  const [password, setPassword] = useState('888888');
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) router.push('/'); // 已登入就回首頁
-  }, [user, router]);
+    if (!hasHydrated) return; // ★ 等水合
+    if (user && !next) {
+      router.replace('/'); // 已登入且沒有 next，才回首頁
+    }
+  }, [hasHydrated, user, next, router]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,9 +38,8 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || 'Login failed');
-      // 後端回傳 { token, user }
       login(data.user, data.token);
-      router.push('/');
+      router.replace(next || '/'); // ★ 成功後回 next
     } catch (e: any) {
       setErr(e.message);
     } finally {
@@ -73,7 +78,10 @@ export default function LoginPage() {
       </form>
       <p className="text-sm">
         還沒有帳號？
-        <Link className="underline" href="/register">
+        <Link
+          className="underline"
+          href={`/register${next ? `?next=${encodeURIComponent(next)}` : ''}`}
+        >
           去註冊
         </Link>
       </p>

@@ -1,37 +1,32 @@
-import { useAuthStore } from '@/store/auth';
-
+// apps/web/src/lib/api.ts
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
-export async function apiFetch<T = any>(
+export async function apiFetch<T>(
   path: string,
   init: RequestInit = {},
+  token?: string,
 ): Promise<T> {
-  const token = useAuthStore.getState().token;
+  const headers = new Headers(init.headers as any);
+  if (!headers.has('Content-Type'))
+    headers.set('Content-Type', 'application/json');
+  if (token) headers.set('Authorization', `Bearer ${token}`);
 
   const res = await fetch(`${BASE}${path}`, {
     ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init.headers || {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    credentials: 'include',
+    headers,
     cache: 'no-store',
   });
 
-  // 2xx
-  if (res.ok) {
-    // 如果內容是空的（204），直接回傳 undefined as any
-    if (res.status === 204) return undefined as any;
-    return (await res.json()) as T;
+  let data: any = null;
+  try {
+    data = await res.json();
+  } catch {
+    /* 可能沒有 body */
   }
 
-  // 非 2xx
-  let errMsg = `${res.status} ${res.statusText}`;
-  try {
-    const j = await res.json();
-    errMsg = j?.message || errMsg;
-  } catch {}
-  throw new Error(errMsg);
+  if (!res.ok) {
+    const msg = data?.message || `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  return data as T;
 }
-export default { apiFetch };

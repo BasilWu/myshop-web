@@ -1,49 +1,38 @@
 'use client';
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-export type Role = 'user' | 'admin';
-export type AuthUser = { id: string; email: string; role: Role; name: string };
+type Role = 'user' | 'admin';
+export type AuthUser = { id: string; email: string; name?: string; role: Role };
 
 type AuthState = {
   user: AuthUser | null;
   token: string | null;
+  hasHydrated: boolean;
+  setHasHydrated: (v: boolean) => void;
   login: (user: AuthUser, token: string) => void;
   logout: () => void;
-  restore: () => void;
 };
 
-const KEY = 'bshop_auth';
-
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  token: null,
-
-  login: (user, token) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(KEY, JSON.stringify({ user, token }));
-    }
-    set({ user, token });
-  },
-
-  logout: () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(KEY);
-    }
-    set({ user: null, token: null });
-  },
-
-  restore: () => {
-    if (typeof window === 'undefined') return;
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (parsed?.user && parsed?.token) {
-        set({ user: parsed.user as AuthUser, token: parsed.token as string });
-      }
-    } catch {
-      // ignore
-    }
-  },
-}));
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      token: null,
+      hasHydrated: false,
+      setHasHydrated: (v) => set({ hasHydrated: v }),
+      login: (user, token) => set({ user, token }),
+      logout: () => set({ user: null, token: null }),
+    }),
+    {
+      name: 'auth',
+      skipHydration: true,
+      partialize: (s) => ({ user: s.user, token: s.token }), // 只存必要欄位
+      onRehydrateStorage: () => (state, error) => {
+        // 無論成功失敗都把 hasHydrated 打開，避免永遠 false
+        queueMicrotask(() => state?.setHasHydrated(true));
+      },
+    },
+  ),
+);

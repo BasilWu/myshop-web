@@ -1,121 +1,208 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import RequireAdmin from '../RequireAdmin';
+import { useAuthStore } from '@/store/auth';
 
-type Product = {
-  id: string;
-  name: string;
-  price: number;
-  stock: number;
-};
+const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
-export default function ProductsAdminPage() {
+type Product = { id: string; name: string; price: number; stock: number };
+
+export default function AdminProductsPage() {
+  const { token } = useAuthStore();
   const [products, setProducts] = useState<Product[]>([]);
-  const [form, setForm] = useState({ name: '', price: '', stock: '' });
-  const token =
-    typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState<number | ''>('');
+  const [stock, setStock] = useState<number | ''>('');
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
-  // 讀取商品
+  useEffect(() => {
+    void loadProducts();
+  }, []);
+
   async function loadProducts() {
-    const res = await fetch('http://localhost:3001/products');
+    const res = await fetch(`${API}/products`, { cache: 'no-store' });
     const data = await res.json();
+    const list = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.products)
+        ? data.products
+        : [];
+    setProducts(list);
+  }
 
-    // 確保一定是陣列
-    if (Array.isArray(data)) {
-      setProducts(data);
-    } else if (Array.isArray(data.products)) {
-      setProducts(data.products);
-    } else {
-      console.error('Unexpected API response:', data);
-      setProducts([]); // 避免 map 出錯
+  async function createProduct(e: React.FormEvent) {
+    e.preventDefault();
+    if (!token) return setErr('未登入或無權限');
+    try {
+      setErr(null);
+      setLoading(true);
+      const res = await fetch(`${API}/products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name,
+          price: Number(price),
+          stock: Number(stock || 0),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || '建立失敗');
+      setName('');
+      setPrice('');
+      setStock('');
+      await loadProducts();
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setLoading(false);
     }
   }
 
-  useEffect(() => {
-    loadProducts();
-  }, []);
+  async function removeProduct(id: string) {
+    if (!token) return setErr('未登入或無權限');
+    if (!confirm('確定刪除？')) return;
+    const res = await fetch(`${API}/products/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data?.message || '刪除失敗');
+      return;
+    }
+    await loadProducts();
+  }
 
-  // 新增商品
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault();
-    if (!token) return alert('請先登入');
-    const res = await fetch('http://localhost:3001/products', {
-      method: 'POST',
+  async function updateProduct(p: Product, patch: Partial<Product>) {
+    if (!token) return setErr('未登入或無權限');
+    const res = await fetch(`${API}/products/${p.id}`, {
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        name: form.name,
-        price: Number(form.price),
-        stock: Number(form.stock),
-      }),
+      body: JSON.stringify(patch),
     });
-    if (res.ok) {
-      setForm({ name: '', price: '', stock: '' });
-      loadProducts();
-    } else {
-      alert('新增失敗');
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data?.message || '更新失敗');
+      return;
     }
-  }
-
-  // 刪除商品
-  async function handleDelete(id: string) {
-    if (!token) return alert('請先登入');
-    const res = await fetch(`http://localhost:3001/products/${id}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (res.ok) {
-      loadProducts();
-    }
+    await loadProducts();
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold">商品管理</h1>
+    <RequireAdmin>
+      <main className="max-w-3xl mx-auto p-6">
+        <h1 className="text-2xl font-semibold">產品管理</h1>
+        {err && (
+          <div className="mt-3 p-3 bg-red-50 border border-red-200 text-red-700 rounded">
+            {err}
+          </div>
+        )}
 
-      <form onSubmit={handleAdd} className="mt-4 space-x-2">
-        <input
-          placeholder="名稱"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          className="border p-2"
-        />
-        <input
-          placeholder="價格"
-          value={form.price}
-          onChange={(e) => setForm({ ...form, price: e.target.value })}
-          className="border p-2"
-        />
-        <input
-          placeholder="庫存"
-          value={form.stock}
-          onChange={(e) => setForm({ ...form, stock: e.target.value })}
-          className="border p-2"
-        />
-        <button type="submit" className="bg-blue-500 text-white px-4 py-2">
-          新增
-        </button>
-      </form>
+        <form
+          onSubmit={createProduct}
+          className="mt-6 grid grid-cols-4 gap-2 items-end"
+        >
+          <input
+            className="border rounded p-2 col-span-2"
+            placeholder="產品名"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+          <input
+            className="border rounded p-2"
+            type="number"
+            min="0"
+            placeholder="價格"
+            value={price}
+            onChange={(e) =>
+              setPrice(e.target.value === '' ? '' : Number(e.target.value))
+            }
+            required
+          />
+          <input
+            className="border rounded p-2"
+            type="number"
+            min="0"
+            placeholder="庫存"
+            value={stock}
+            onChange={(e) =>
+              setStock(e.target.value === '' ? '' : Number(e.target.value))
+            }
+          />
+          <button
+            disabled={loading}
+            className="col-span-4 border rounded p-2 bg-black text-white disabled:opacity-60"
+          >
+            {loading ? '建立中…' : '新增產品'}
+          </button>
+        </form>
 
-      <ul className="mt-6 space-y-2">
-        {products.map((p) => (
-          <li key={p.id} className="flex justify-between border p-2">
-            <span>
-              {p.name} - ${p.price} (庫存: {p.stock})
-            </span>
-            <button
-              onClick={() => handleDelete(p.id)}
-              className="bg-red-500 text-white px-3"
+        <ul className="mt-6 space-y-2">
+          {products.map((p) => (
+            <li
+              key={p.id}
+              className="flex justify-between items-center border p-2 rounded"
             >
-              刪除
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
+              <div>
+                <div className="font-medium">{p.name}</div>
+                <div className="text-sm text-gray-500">
+                  ${p.price} ・ 庫存 {p.stock}
+                </div>
+              </div>
+              <div className="space-x-2">
+                <button
+                  className="px-3 py-1 border rounded"
+                  onClick={() => {
+                    const v = prompt('新名稱', p.name);
+                    if (v && v !== p.name) updateProduct(p, { name: v });
+                  }}
+                >
+                  改名
+                </button>
+                <button
+                  className="px-3 py-1 border rounded"
+                  onClick={() => {
+                    const v = prompt('新價格', String(p.price));
+                    if (v !== null) {
+                      const n = Number(v);
+                      if (!Number.isNaN(n)) updateProduct(p, { price: n });
+                    }
+                  }}
+                >
+                  改價
+                </button>
+                <button
+                  className="px-3 py-1 border rounded"
+                  onClick={() => {
+                    const v = prompt('新庫存', String(p.stock));
+                    if (v !== null) {
+                      const n = Number(v);
+                      if (!Number.isNaN(n)) updateProduct(p, { stock: n });
+                    }
+                  }}
+                >
+                  改庫存
+                </button>
+                <button
+                  className="px-3 py-1 border rounded text-red-600"
+                  onClick={() => removeProduct(p.id)}
+                >
+                  刪除
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </main>
+    </RequireAdmin>
   );
 }
