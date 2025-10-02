@@ -34,3 +34,4 @@ export async function apiFetch<T = any>(
   } catch {}
   throw new Error(errMsg);
 }
+export default { apiFetch };

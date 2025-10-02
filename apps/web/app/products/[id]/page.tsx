@@ -1,4 +1,4 @@
-import { api } from '@/lib/api';
+import api from '@/lib/api';
 import type { Product } from '@/types/product';
 import AddToCartInline from '../AddToCartInline';
 import Image from 'next/image';
@@ -9,7 +9,7 @@ export default async function ProductDetailPage(props: {
   // ✅ 這裡 await params
   const { id } = await props.params;
 
-  const product = await api<Product>(`/products/${id}`);
+  const product = await api.apiFetch<Product>(`/products/${id}`);
 
   return (
     <main className="p-6 max-w-3xl mx-auto">
