@@ -1,29 +1,40 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth';
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
-export default function LoginPage() {
+// 外層只負責提供 Suspense 邊界
+export default function Page() {
+  return (
+    <Suspense fallback={<main className="p-6">載入中…</main>}>
+      <LoginInner />
+    </Suspense>
+  );
+}
+
+function LoginInner() {
   const router = useRouter();
   const search = useSearchParams();
-  const next = search.get('next') || '';
-  const { login, user, hasHydrated } = useAuthStore();
+  const nextPath = search.get('next') || '/';
 
-  const [email, setEmail] = useState('admin@basil.com');
-  const [password, setPassword] = useState('888888');
+  const { login, restore, user } = useAuthStore() as any;
+
+  const [email, setEmail] = useState('user3@test.com');
+  const [password, setPassword] = useState('123456');
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!hasHydrated) return; // ★ 等水合
-    if (user && !next) {
-      router.replace('/'); // 已登入且沒有 next，才回首頁
-    }
-  }, [hasHydrated, user, next, router]);
+    if (typeof restore === 'function') restore();
+  }, [restore]);
+
+  useEffect(() => {
+    if (user) router.push(nextPath);
+  }, [user, router, nextPath]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,8 +49,13 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || 'Login failed');
-      login(data.user, data.token);
-      router.replace(next || '/'); // ★ 成功後回 next
+
+      // 後端回傳 { token, user }
+      // 你的 store 現在 login 只吃 user；token 另外存在 localStorage，供後台頁取用
+      if (data?.token) localStorage.setItem('token', data.token);
+      login?.(data.user);
+
+      router.push(nextPath);
     } catch (e: any) {
       setErr(e.message);
     } finally {
@@ -78,10 +94,7 @@ export default function LoginPage() {
       </form>
       <p className="text-sm">
         還沒有帳號？
-        <Link
-          className="underline"
-          href={`/register${next ? `?next=${encodeURIComponent(next)}` : ''}`}
-        >
+        <Link className="underline" href="/register">
           去註冊
         </Link>
       </p>
