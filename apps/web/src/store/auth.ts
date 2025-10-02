@@ -1,17 +1,19 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
-type Role = 'user' | 'admin';
-export type AuthUser = { id: string; email: string; name?: string; role: Role };
+type User = {
+  id: string;
+  email: string;
+  name?: string;
+  role: 'user' | 'admin';
+};
 
 type AuthState = {
-  user: AuthUser | null;
+  user: User | null;
   token: string | null;
-  hasHydrated: boolean;
-  setHasHydrated: (v: boolean) => void;
-  login: (user: AuthUser, token: string) => void;
+  login: (u: User, t: string) => void;
   logout: () => void;
 };
 
@@ -20,19 +22,32 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       token: null,
-      hasHydrated: false,
-      setHasHydrated: (v) => set({ hasHydrated: v }),
       login: (user, token) => set({ user, token }),
       logout: () => set({ user: null, token: null }),
     }),
     {
       name: 'auth',
-      skipHydration: true,
-      partialize: (s) => ({ user: s.user, token: s.token }), // 只存必要欄位
-      onRehydrateStorage: () => (state, error) => {
-        // 無論成功失敗都把 hasHydrated 打開，避免永遠 false
-        queueMicrotask(() => state?.setHasHydrated(true));
+      version: 1,
+      storage: createJSONStorage(() => localStorage),
+      // 過往你手刻 restore() 版本不相容，這裡補上 migrate，避免
+      // "State loaded from storage couldn't be migrated..." 警告
+      migrate: (state: any, version) => {
+        // 舊版若有 hydrated/restore 等欄位，直接忽略
+        const next: Partial<AuthState> = {};
+        if (state?.user !== undefined) next.user = state.user;
+        if (state?.token !== undefined) next.token = state.token;
+        return { user: next.user ?? null, token: next.token ?? null };
       },
+      // serialize / deserialize 可省略，讓默認 JSON 即可
     },
   ),
 );
+
+// ✅ 小工具：判斷是否已從 storage 還原
+export function useAuthHydrated(): boolean {
+  // 注意：persist 擴展會在 hook 上注入 persist 屬性
+  // 直接用任何 selector 都會觸發訂閱，這裡取 user 只是為了讓 component 刷新。
+  useAuthStore((s) => s.user);
+  // @ts-ignore
+  return useAuthStore.persist?.hasHydrated?.() === true;
+}

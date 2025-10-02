@@ -1,40 +1,31 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useAuthStore } from '@/store/auth';
+import { useAuthStore, useAuthHydrated } from '@/store/auth';
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
-// 外層只負責提供 Suspense 邊界
-export default function Page() {
-  return (
-    <Suspense fallback={<main className="p-6">載入中…</main>}>
-      <LoginInner />
-    </Suspense>
-  );
-}
-
-function LoginInner() {
+export default function LoginPage() {
   const router = useRouter();
-  const search = useSearchParams();
-  const nextPath = search.get('next') || '/';
+  const sp = useSearchParams();
+  const hydrated = useAuthHydrated();
 
-  const { login, restore, user } = useAuthStore() as any;
+  const user = useAuthStore((s) => s.user);
+  const login = useAuthStore((s) => s.login);
 
-  const [email, setEmail] = useState('user3@test.com');
-  const [password, setPassword] = useState('123456');
+  const [email, setEmail] = useState('admin@basil.com');
+  const [password, setPassword] = useState('888888');
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (typeof restore === 'function') restore();
-  }, [restore]);
+  const redirect = sp.get('redirect') || '/';
 
   useEffect(() => {
-    if (user) router.push(nextPath);
-  }, [user, router, nextPath]);
+    if (!hydrated) return;
+    if (user) router.replace(redirect);
+  }, [hydrated, user, redirect, router]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -44,24 +35,24 @@ function LoginInner() {
       const res = await fetch(`${API}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.message || 'Login failed');
-
       // 後端回傳 { token, user }
-      // 你的 store 現在 login 只吃 user；token 另外存在 localStorage，供後台頁取用
-      if (data?.token) localStorage.setItem('token', data.token);
-      login?.(data.user);
-
-      router.push(nextPath);
+      login(data.user, data.token);
+      router.replace(redirect);
     } catch (e: any) {
       setErr(e.message);
     } finally {
       setLoading(false);
     }
   }
+
+  if (!hydrated)
+    return <main className="max-w-md mx-auto p-6">檢查登入中…</main>;
+  if (user)
+    return <main className="max-w-md mx-auto p-6">已登入，導向中…</main>;
 
   return (
     <main className="max-w-md mx-auto p-6 space-y-4">
@@ -93,7 +84,7 @@ function LoginInner() {
         </button>
       </form>
       <p className="text-sm">
-        還沒有帳號？
+        沒有帳號？
         <Link className="underline" href="/register">
           去註冊
         </Link>

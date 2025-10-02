@@ -5,22 +5,20 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
-import { Public } from '../auth/public.decorator';
 
 @Controller('products')
 export class ProductsController {
   constructor(private readonly products: ProductsService) {}
 
-  // ---- 公開 ----
-  @Public()
+  // 公開
   @Get()
   findAll() { return this.products.findAll(); }
 
-  @Public()
+  // 公開
   @Get(':id')
   findOne(@Param('id') id: string) { return this.products.findOne(id); }
 
-  // ---- 需要 admin ----
+  // 僅 admin
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Post()
