@@ -1,33 +1,30 @@
 'use client';
 
 import { ReactNode, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/auth';
+import { useRouter, usePathname } from 'next/navigation';
+import { useAuthStore, useAuthHydrated } from '@/store/auth';
 
-export default function AuthGate({
-  children,
-  adminOnly = false,
-}: {
-  children: ReactNode;
-  adminOnly?: boolean;
-}) {
+export default function RequireAdmin({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const { user, hasHydrated } = useAuthStore();
+  const pathname = usePathname();
+  const hydrated = useAuthHydrated();
+  const user = useAuthStore((s) => s.user);
 
-  // 等 rehydrate 完成
-  if (!hasHydrated) return <main className="p-6">檢查登入中…</main>;
+  useEffect(() => {
+    if (!hydrated) return; // 等待狀態還原完畢
+    if (!user) {
+      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+      return;
+    }
+    if (user.role !== 'admin') {
+      router.replace('/');
+      return;
+    }
+  }, [hydrated, user, router, pathname]);
 
-  // 未登入 → 導到登入頁
-  if (!user) {
-    if (typeof window !== 'undefined') router.replace('/login');
-    return null;
-  }
-
-  // 需 admin 權限
-  if (adminOnly && user.role !== 'admin') {
-    if (typeof window !== 'undefined') router.replace('/');
-    return null;
-  }
+  if (!hydrated) return <main className="p-6">檢查登入中…</main>;
+  if (!user) return null; // 正在 redirect
+  if (user.role !== 'admin') return null;
 
   return <>{children}</>;
 }
