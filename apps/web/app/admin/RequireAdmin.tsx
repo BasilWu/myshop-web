@@ -1,25 +1,27 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/auth';
+import { useAuthStore, useAuthHydrated } from '@/store/auth';
 
 export default function RequireAdmin({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const { user, hasHydrated } = useAuthStore();
+  const hydrated = useAuthHydrated();
+  const user = useAuthStore((s) => s.user);
 
   useEffect(() => {
-    if (!hasHydrated) return;
+    if (!hydrated) return; // 等等 hydration 完成
     if (!user) {
-      router.replace('/login?next=/admin/products'); // 未登入才去 login（保留 next）
+      router.replace('/login'); // 未登入 → 去登入
       return;
     }
-    // 已登入但不是 admin：不跳轉，渲染「無權限」訊息由子頁面處理
-  }, [hasHydrated, user, router]);
+    if (user.role !== 'admin') {
+      router.replace('/'); // 不是 admin → 回首頁
+    }
+  }, [hydrated, user, router]);
 
-  if (!hasHydrated) return <main className="p-6">檢查登入中…</main>;
-  if (!user) return <main className="p-6">前往登入中…</main>;
-  if (user.role !== 'admin') return <main className="p-6">無權限</main>;
+  if (!hydrated) return <main className="p-6">檢查登入中…</main>;
+  if (!user || user.role !== 'admin') return null;
 
   return <>{children}</>;
 }

@@ -1,17 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore, useAuthHydrated } from '@/store/auth';
+import { useAuthStore } from '@/store/auth';
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
 type Product = { id: string; name: string; price: number; stock: number };
 
 export default function AdminProductsPage() {
-  const router = useRouter();
-  const hydrated = useAuthHydrated();
-  const user = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.token);
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -22,17 +18,8 @@ export default function AdminProductsPage() {
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!hydrated) return; // 等還原完成
-    if (!user) {
-      router.replace('/login');
-      return;
-    }
-    if (user.role !== 'admin') {
-      router.replace('/');
-      return;
-    }
     void loadProducts();
-  }, [hydrated, user, router]);
+  }, []);
 
   async function loadProducts() {
     const res = await fetch(`${API}/products`, { cache: 'no-store' });
@@ -105,10 +92,6 @@ export default function AdminProductsPage() {
     }
     await loadProducts();
   }
-
-  if (!hydrated) return <main className="p-6">檢查登入中…</main>;
-  if (!user) return <main className="p-6">請先登入</main>;
-  if (user.role !== 'admin') return <main className="p-6">無權限</main>;
 
   return (
     <main className="max-w-3xl mx-auto p-6">
