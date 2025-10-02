@@ -1,6 +1,4 @@
-'use client';
-
-import AuthGate from '@/components/auth-gate';
+import AuthGate from '@/components/AuthGate';
 
 export default function AdminLayout({
   children,
